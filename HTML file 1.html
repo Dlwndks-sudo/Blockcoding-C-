@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockly C Workspace</title>
+    <script src="https://unpkg.com/blockly/blockly.min.js"></script>
+    <style>
+        #blocklyDiv {
+            height: 500px;
+            width: 100%;
+            border: 1px solid black;
+        }
+        #output {
+            white-space: pre;
+            border: 1px solid black;
+            padding: 10px;
+        }
+        #text {
+            white-space: pre;
+            border: 1px solid black;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Workspace</h1>
+    <button id="generateCode">Generate Code</button>
+    <div id="blocklyDiv"></div>
+    <div id="output"></div>
+    <div id="text">텍스트 변경</div>
+
+    <script>
+        Blockly.C = new Blockly.Generator('C');
+        
+        Blockly.C.ORDER_ATOMIC = 0;
+        Blockly.C.ORDER_NONE = 99;
+
+        Blockly.Blocks['variable_declare'] = {
+            init: function() {
+                this.appendDummyInput()
+                    .appendField('declare')
+                    .appendField(new Blockly.FieldDropdown([["int", "int"], ["float", "float"], ["char", "char"]]), "TYPE")
+                    .appendField(new Blockly.FieldTextInput("varName"), "NAME");
+                this.setPreviousStatement(true, null);
+                this.setNextStatement(true, null);
+                this.setColour(180);
+                this.setTooltip('Declare a variable with type and name');
+                this.setHelpUrl('');
+            }
+        };
+
+        Blockly.C['variable_declare'] = function(block) {
+            const type = block.getFieldValue('TYPE');
+            const name = block.getFieldValue('NAME');
+            return `${type} ${name};\n`;
+        };
+
+        Blockly.Blocks['variable_use'] = {
+            init: function() {
+                this.appendDummyInput()
+                    .appendField('variable')
+                    .appendField(new Blockly.FieldVariable("item"), "VAR");
+                this.setOutput(true, null);
+                this.setColour(330);
+                this.setTooltip('Select a declared variable');
+                this.setHelpUrl('');
+            }
+        };
+
+        Blockly.C['variable_use'] = function(block) {
+            const variableName = block.getField('VAR') ? block.getFieldValue('VAR') : 'variable';
+            return [variableName, Blockly.C.ORDER_ATOMIC];
+        };
+
+          Blockly.Blocks['include_stdio'] = {
+            init: function() {
+                this.appendDummyInput()
+                    .appendField('#include<stdio.h>');
+                this.setNextStatement(true, null);
+                this.setColour(230);
+                this.setTooltip('Add #include<stdio.h> to the code');
+                this.setHelpUrl('');
+            }
+        };
+
+        // #include<stdio.h> 블록의 C 코드 생성기
+        Blockly.C['include_stdio'] = function(block) {
+            return '#include<stdio.h>\n';
+        };
+
+        // void main 블록 정의
+        Blockly.Blocks['void_main'] = {
+            init: function() {
+                this.appendDummyInput()
+                    .appendField('void main()');
+                this.appendStatementInput('BODY')
+                    .setCheck(null)
+                    .appendField('{');
+                this.appendDummyInput()
+                    .appendField('}');
+                this.setPreviousStatement(true, null);
+                this.setNextStatement(true, null);
+                this.setColour(120);
+                this.setTooltip('Define the main function');
+                this.setHelpUrl('');
+            }
+        };
+
+        // void main 블록의 C 코드 생성기
+        Blockly.C['void_main'] = function(block) {
+            const statements_body = Blockly.C.statementToCode(block, 'BODY');
+            return `void main() {\n${statements_body}}\n`;
+        };
+
+        
+        Blockly.Blocks['printf'] = {
+            init: function() {
+                this.appendDummyInput()
+                    .appendField('printf');
+                this.appendDummyInput()
+                    .appendField('"')
+                    .appendField(new Blockly.FieldTextInput("format string"), "FORMAT")
+                    .appendField('"');
+                this.appendValueInput("VALUE")
+                    .setCheck(null)
+                    .appendField(',');
+                this.setPreviousStatement(true, null);
+                this.setNextStatement(true, null);
+                this.setColour(225);
+                this.setTooltip('Print formatted text with variables');
+                this.setHelpUrl('');
+            }
+        };
+
+        Blockly.C['printf'] = function(block) {
+            const format = block.getFieldValue('FORMAT');
+            const value = Blockly.C.valueToCode(block, 'VALUE', Blockly.C.ORDER_NONE) || '';
+            return `    printf("${format}", ${value});\n`;
+        };
+
+        Blockly.Blocks['scanf'] = {
+            init: function() {
+                this.appendDummyInput()
+                    .appendField('scanf');
+                this.appendDummyInput()
+                    .appendField('"')
+                    .appendField(new Blockly.FieldTextInput("%d"), "FORMAT")
+                    .appendField('"');
+                this.appendDummyInput()
+                    .appendField(',')
+                    .appendField(new Blockly.FieldVariable("item"), "VAR");
+                this.setPreviousStatement(true, null);
+                this.setNextStatement(true, null);
+                this.setColour(60);
+                this.setTooltip('Take input from the user');
+                this.setHelpUrl('');
+            }
+        };
+
+        Blockly.C['scanf'] = function(block) {
+            const format = block.getFieldValue('FORMAT');
+            const variableName = block.getField('VAR') ? block.getFieldValue('VAR') : 'variable';
+            return `    scanf("${format}", &${variableName});\n`;
+        };
+
+        Blockly.Blocks['while'] = {
+          init: function() {
+            this.appendDummyInput('NAME').appendField('while').appendField(new Blockly.FieldTextInput('condition'), 'NAME');
+            this.appendStatementInput('NAME2');            
+            this.setPreviousStatement(true, null);
+            this.setNextStatement(true, null);
+            this.setTooltip('');
+            this.setHelpUrl('');
+            this.setColour(225);
+          }
+        };
+
+        Blockly.C['while'] = function(block) {
+          var condition_do = Blockly.C.valueToCode(block, 'A', Blockly.C.ORDER_ATOMIC); 
+          var statements_do = Blockly.C.statementToCode(block, 'DO');
+          var code = 'while(' + condition_do + ')' + '\n{' + statements_do + '}\n'; 
+          return code;
+        };
+
+        Blockly.Blocks['do_while'] = {
+          init: function() {
+            this.appendStatementInput('NAME').appendField('do').appendField(new Blockly.FieldTextInput('default'), 'NAME');
+            this.appendDummyInput('NAME2').appendField("while").appendField(new Blockly.FieldTextInput('condition'), 'NAME2');            
+            this.setPreviousStatement(true, null);
+            this.setNextStatement(true, null);
+            this.setTooltip('');
+            this.setHelpUrl('');
+            this.setColour(225);
+          }
+        };
+
+        Blockly.C['do_while'] = function(block) {
+          var statements_do = Blockly.C.statementToCode(block, 'DO');
+          var condition_do = Blockly.C.valueToCode(block, 'A', Blockly.C.ORDER_ATOMIC);
+          var code = 'do\n{' + statements_do + '};' + 'while(' + condition_do + ')\n';
+          return code;
+        };
+
+        Blockly.Blocks['for'] = {
+          init: function() {
+            this.appendDummyInput('NAME').appendField('for').appendField(new Blockly.FieldTextInput('initialization'), 'NAME').appendField(new Blockly.FieldTextInput('condition'), 'NAME2')
+            .appendField(new Blockly.FieldTextInput('increase/decrease'), 'NAME3');          
+            this.appendStatementInput('NAME2');
+            this.setPreviousStatement(true, null);
+            this.setNextStatement(true, null);
+            this.setTooltip('');
+            this.setHelpUrl('');
+            this.setColour(225);
+          }
+        };
+
+        Blockly.C['for'] = function(block) {
+          var initialization_do = Blockly.C.valueToCode(block, 'A', Blockly.C.ORDER_ATOMIC);
+          var condition_do = Blockly.C.valueToCode(block, 'B', Blockly.C.ORDER_ATOMIC);
+          var indecrease_do = Blockly.C.valueToCode(block, 'c', Blockly.C.ORDER_ATOMIC);
+          var statements_do = Blockly.C.statementToCode(block, 'DO');
+          var code = 'for(' + initialization_do + ';' + condition_do + ';' + indecrease_do + ')\n{' + statements_do + '}\n'  
+          return code;
+        };
+
+        Blockly.Blocks['value'] = {
+          init: function() {
+            this.appendDummyInput('NAME').appendField(new Blockly.FieldTextInput('data type'), 'NAME').appendField(new Blockly.FieldTextInput('name'), 'NAME');
+            this.setPreviousStatement(true, null);
+            this.setNextStatement(true, null);
+            this.setTooltip('');
+            this.setHelpUrl('');
+            this.setColour(225);
+          }
+        };
+
+        Blockly.C['value'] = function(block) {
+          var datatype_do = Blockly.C.valueToCode(block, 'A', Blockly.C.ORDER_ATOMIC);
+          var valuename_do = Blockly.C.valueToCode(block, 'B', Blockly.C.ORDER_ATOMIC);
+          var code = datatype_do + ' ' + valuename_do;
+          return code;
+        };
+
+        Blockly.Blocks['if'] = {
+          init: function() {
+            this.appendDummyInput('NAME').appendField('if').appendField(new Blockly.FieldTextInput('condition'), 'NAME2');
+            this.appendStatementInput('NAME2');
+            this.setPreviousStatement(true, null);
+            this.setNextStatement(true, null);
+            this.setTooltip('');
+            this.setHelpUrl('');
+            this.setColour(225);
+          }
+        };
+            
+        Blockly.C['if'] = function(block) {
+          var condition_do = Blockly.C.valueToCode(block, 'A', Blockly.C.ORDER_ATOMIC);
+          var statements_do = Blockly.C.statementToCode(block, 'DO');
+          var code = 'if(' + condition_do + ')\n{' + statements_do + '}\n';
+          return code;
+        };
+
+        Blockly.Blocks['else_if'] = {
+          init: function() {
+            this.appendDummyInput('NAME').appendField('else if').appendField(new Blockly.FieldTextInput('condition'), 'NAME');
+            this.appendStatementInput('NAME2');
+            this.setPreviousStatement(true, null);
+            this.setNextStatement(true, null);
+            this.setTooltip('');
+            this.setHelpUrl('');
+            this.setColour(225);
+          }
+        };
+
+        Blockly.C['else_if'] = function(block) {
+          var condition_do = Blockly.C.valueToCode(block, 'A', Blockly.C.ORDER_ATOMIC);
+          var statements_do = Blockly.C.statementToCode(block, 'DO');
+          var code = 'else if(' + condition_do + ')\n{' + statements_do + '}\n';
+          return code;
+        };
+
+        Blockly.Blocks['else'] = {
+          init: function() {
+            this.appendDummyInput('NAME').appendField('else');
+            this.appendStatementInput('NAME2');
+            this.setPreviousStatement(true, null);
+            this.setNextStatement(true, null);
+            this.setTooltip('');
+            this.setHelpUrl('');
+            this.setColour(225);
+          }
+        };
+
+        Blockly.C['else'] = function(block) {
+          var statements_do = Blockly.C.statementToCode(block, 'DO');
+          var code = 'else' + '\n{' + statements_do + '}\n';
+          return code;
+        };
+
+        Blockly.Blocks['function_void'] = {
+          init: function() {
+            this.appendDummyInput('NAME').appendField('void').appendField(new Blockly.FieldTextInput('function_name'), 'NAME');
+            this.appendStatementInput('NAME3');
+            this.setPreviousStatement(true, null);
+            this.setTooltip('');
+            this.setHelpUrl('');
+            this.setColour(225);
+          }
+        };
+
+        Blockly.C['function_void'] = function(block) {
+          var funcname_do = Blockly.C.valueToCode(block, 'A', Blockly.C.ORDER_ATOMIC);
+          var statements_do = Blockly.C.statementToCode(block, 'DO');
+          var code = 'void' + ' ' + funcname_do + '\n{' + statements_do + '}\n';
+          return code;
+        };
+
+        Blockly.Blocks['function'] = {
+          init: function() {
+            this.appendDummyInput('NAME').appendField(new Blockly.FieldTextInput('data type'), 'NAME').appendField(new Blockly.FieldTextInput('function_name', 'NAME2'));
+            this.appendStatementInput('NAME2');
+            this.appendDummyInput('NAME3').appendField('output');
+            this.appendStatementInput('NAME4');
+            this.setPreviousStatement(true, null);
+            this.setNextStatement(true, null);
+            this.setTooltip('');
+            this.setHelpUrl('');
+            this.setColour(225);
+          }
+        };
+
+        Blockly.C['function'] = function(block) {
+          var datatype_do = Blockly.C.valueToCode(block, 'A', Blockly.C.ORDER_ATOMIC);
+          var funcname_do = Blockly.C.valueToCode(block, 'A', Blockly.C.ORDER_ATOMIC);
+          var statements_do = Blockly.C.statementToCode(block, 'DO');
+          var result_do = Blockly.C.statementToCode(block, 'DO');
+          var code = datatype_do + ' ' + funcname_do + '\n{' + statements_do + '}\n' + result + ' ' + result_do;
+          return code;
+        };
+
+        // Blockly workspace 생성
+        var workspace = Blockly.inject('blocklyDiv', {
+            toolbox: `
+              <xml id="toolbox" style="display:none">
+                  <category name="Headers" colour="230">
+                    <block type="include_stdio"></block>
+                  </category>
+                  <category name="Functions" colour="120">
+                    <block type="void_main"></block>
+                  </category>
+                  <category name="Input/Output">
+                    <block type="printf"></block>
+                    <block type="scanf"></block>
+                  </category>
+
+                  <category name="Loop">
+                    <block type="while"></block>
+                    <block type="do_while"></block>
+                    <block type="for"></block>
+                  </category>
+
+                  <category name="Variables" colour="180">
+                        <block type="variable_declare"></block>
+                        <block type="variable_use"></block>
+                    </category>
+
+                  <category name="Conditional statement">
+                    <block type="if"></block>
+                  </category>
+
+                  <category name="Function">
+                    <block type="function_void"></block>
+                    <block type="function"></block>
+                  </category>
+
+              </xml>`,
+        });
+
+        document.getElementById('generateCode').addEventListener('click', function() {
+          var code = Blockly.C.workspaceToCode(workspace);
+          console.log(code);
+        });
+
+        function changeText() {
+          var code = Blockly.C.workspaceToCode(workspace);
+          document.getElementById("text").textContent = code;
+        }
+
+        document.getElementById("generateCode").addEventListener("click", changeText);
+    </script>
+</body>
+</html>

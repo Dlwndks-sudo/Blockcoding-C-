@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>block learning by C</title>
+    
+</head>
+<style>
+    body{
+        display: flex;
+        background-color: black;
+        background-image: url(background.png);
+        background-repeat: no-repeat;
+        background-size: cover;
+        height: 95vh;
+        position: relative;
+    }
+    button{
+        background-color: transparent;
+        outline-color: transparent;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        position: absolute;
+        top: 15%; 
+        left: 90%; 
+        transform: translate(-50%, -90%);
+    }
+    button.img{
+        max-width: 100%;
+        height: auto;
+        transition: filter 0.3s;
+    }
+    button:hover img {
+        filter: hue-rotate(180deg) brightness(1.5);
+    }
+</style>
+
+<button onclick="location.href='HTML file 1.html'", >
+    <img src="button.png" alt="button">
+</button>
+
+
+
+<body>
+</body>
+</html>
